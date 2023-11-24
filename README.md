@@ -180,3 +180,99 @@ in the `[scrapyd]` section.
 This is a good time to mention that there exists a [scrapyd-client](https://github.com/scrapy/scrapyd-client) project for deploying eggs to scrapyd equipped servers.
 I chose not to use it because it doesn't know about servers already set up in `~/.ssh/config` and so requires repetitive configuration.
 
+### Running the scraper on an AWS EC2 instance
+If you want to run your Scrapy spider on AWS (Amazon Web Services) and save the output to a CSV file, you can use AWS services such as EC2 (Elastic Compute Cloud) for hosting your spider and S3 (Simple Storage Service) for storing the output data. Here's a general guide:
+
+#### Steps:
+1. Create an EC2 Instance:
+
+2. Launch an EC2 instance on AWS. You can choose an Amazon Machine Image (AMI) with a suitable environment for your Scrapy project (e.g., an Amazon Linux image).
+Connect to the EC2 Instance:
+
+3. Connect to your EC2 instance using SSH. You'll need the public IP address or DNS of your instance and the private key associated with the key pair used when launching the instance.
+Install Dependencies on EC2:
+
+4. On the EC2 instance, install Python, Scrapy, and any other dependencies required for your Scrapy project.
+Copy Your Scrapy Project to EC2:
+
+5. Copy your Scrapy project files to the EC2 instance. You can use scp (secure copy) to transfer files from your local machine to the EC2 instance.
+
+Example:
+
+```bash 
+scp -i /path/to/your/private-key.pem -r /path/to/your/scrapy-project ec2-user@your-ec2-ip:/path/on/ec2
+```
+Configure Scrapy Settings:
+
+Modify your Scrapy project's settings to use AWS S3 as the output location. Set the FEED_URI to an S3 path, and provide your AWS credentials.
+
+Example:
+
+```python
+settings.py
+FEEDS = {
+    's3://your-bucket-name/output.csv': {
+        'format': 'csv',
+        'overwrite': True,
+    },
+}
+AWS_ACCESS_KEY_ID = 'your-access-key'
+AWS_SECRET_ACCESS_KEY = 'your-secret-key'
+```
+Run Your Scrapy Spider:
+
+Run your Scrapy spider on the EC2 instance. You can use a tool like tmux to keep the process running even if you disconnect from the instance.
+Access the Output on S3:
+
+Once the spider completes, the CSV output will be stored in the specified S3 bucket. You can access it using the AWS S3 console or download it programmatically.
+Notes:
+Ensure that your EC2 instance has the necessary permissions to write to the specified S3 bucket.
+You may need to configure the security group of your EC2 instance to allow outbound internet access for downloading dependencies.
+Always be mindful of AWS costs associated with EC2 instances, S3 storage, and data transfer.
+
+#### Using Docker? 
+To run a Docker container on an EC2 instance, you need to follow these general steps. Please note that these steps assume you've already set up Docker on your EC2 instance.
+
+1. Connect to Your EC2 Instance:
+Use SSH to connect to your EC2 instance. Replace your-ec2-instance-ip with the actual IP address or DNS of your EC2 instance:
+```bash
+ssh -i your-key.pem ec2-user@your-ec2-instance-ip
+```
+
+2. Copy Your Dockerfile and Code:
+Transfer your Dockerfile and the necessary code to your EC2 instance. You can use scp for this:
+```bash
+scp -i your-key.pem -r /path/to/your/code ec2-user@your-ec2-instance-ip:/path/to/destination
+```
+3. Connect to your EC2 instance again to navigate to the directory where you copied your Dockerfile and code.
+
+4. Build the Docker Image:
+Build your Docker image using the Dockerfile:
+
+```bash
+docker build -t your-image-name .
+```
+5. Run the Docker Container:
+Run the Docker container based on the image you built:
+
+```bash
+docker run -d your-image-name
+```
+The -d flag runs the container in detached mode.
+
+6. Check Running Containers:
+Check if your container is running:
+
+```bash
+docker ps
+```
+This command will display a list of running containers.
+
+
+Now, your Docker container should be running on your EC2 instance. Keep in mind that you might need to expose and publish ports if your application inside the container requires external access.
+
+If your application involves web scraping and you're using Scrapyd, ensure that Scrapyd is properly configured and running. Also, consider whether you want to expose the Scrapyd web service port if you plan to interact with Scrapyd through its API.
+
+### Output Format
+
+ If you are running both the games and reviews spider and you want to store their outputs in separate CSV files, you can modify the `FEED_URI` setting dynamically based on the spider's name in the` settings.py` file. It automatically stores the output as the default spider names (i.e. GamesSpider.csv and ReviewSpider.csv)
